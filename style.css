@@ -58,7 +58,7 @@ body{
   font-size:clamp(50px,12vw,80px);
   font-weight:700;letter-spacing:.02em;
   font-variant-numeric:tabular-nums;line-height:1.05;
-  color:var(--text);
+  color:var(--clock-color, var(--text));
 }
 .clock .ampm{font-size:.45em;color:var(--muted);font-weight:400;margin-left:8px;vertical-align:.4em}
 .date{margin-top:6px;color:var(--muted);font-size:15px;letter-spacing:.04em}
@@ -206,3 +206,10 @@ body.dark{
 .m-body .tip{margin-top:12px;padding:10px 12px;background:var(--soft);border-radius:10px;font-size:13px;color:var(--muted)}
 .m-body b{color:var(--accent)}
 .m-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+
+/* 时钟颜色选择 */
+.color-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
+.swatch-dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0;flex:none}
+.swatch-dot.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.color-pick{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--muted)}
+.color-pick input[type=color]{width:46px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:2px;cursor:pointer}

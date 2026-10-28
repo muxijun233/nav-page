@@ -2,6 +2,8 @@ const STORE_KEY = 'nav-page-data-v1';
 const WP_KEY = 'nav-page-wallpaper';
 const CUSTOM_WP_KEY = 'nav-page-custom-wp';
 const NAME_KEY = 'nav-page-name';
+const MODE_KEY = 'nav-page-mode';
+const CLOCK_COLOR_KEY = 'nav-page-clock-color';
 
 const ICONS = {
   globe:   'M12 3v16M3 8h18M5 8a7 7 0 0 0 7 7 7 7 0 0 0 7-7',
@@ -275,10 +277,21 @@ document.getElementById('cancelBtn').addEventListener('click', function(){
 });
 
 document.getElementById('resetBtn').addEventListener('click', function(){
-  if (!confirm('确定恢复默认链接吗？你自定义的内容将被清除。')) return;
+  if (!confirm('确定恢复默认吗？你的分组、壁纸、名字、日夜模式、时钟颜色都将被清除。')) return;
   data = clone(DEFAULT_DATA);
-  try { localStorage.removeItem(STORE_KEY); } catch(e){}
-  editing = false; render();
+  try {
+    localStorage.removeItem(STORE_KEY);
+    localStorage.removeItem(WP_KEY);
+    localStorage.removeItem(CUSTOM_WP_KEY);
+    localStorage.removeItem(NAME_KEY);
+    localStorage.removeItem(MODE_KEY);
+    localStorage.removeItem(CLOCK_COLOR_KEY);
+  } catch(e){}
+  document.documentElement.style.removeProperty('--clock-color');
+  applyLook();
+  updateModeBtn();
+  editing = false;
+  render();
 });
 
 // 委托：分组/链接的局部操作（不整体重绘，保护其他分组正在编辑的内容）
@@ -466,12 +479,102 @@ document.getElementById('wpFile').addEventListener('change', function(){
 document.addEventListener('click', function(e){
   if (!document.getElementById('wpWrap').contains(e.target)) setWpPanel(false);
 });
-// 初始化壁纸
-(function(){
+// ===== 弹窗（提前定义，供日夜/时钟使用）=====
+const modalMask = document.getElementById('modalMask');
+function showModal(title, bodyHTML, footHTML){
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mBody').innerHTML = bodyHTML;
+  document.getElementById('mFoot').innerHTML = footHTML;
+  modalMask.hidden = false;
+}
+function hideModal(){ modalMask.hidden = true; }
+
+// ===== 日夜模式 + 外观应用 =====
+function getMode(){
+  try { return localStorage.getItem(MODE_KEY) === 'night' ? 'night' : 'day'; } catch(e){ return 'day'; }
+}
+function currentWp(){
   const id = currentWpId();
-  const wp = WALLPAPERS.find(w => w.id === id) || (id === 'custom' ? { id:'custom' } : WALLPAPERS[0]);
-  applyWallpaper(wp, false);
-})();
+  return WALLPAPERS.find(w => w.id === id) || (id === 'custom' ? { id:'custom' } : WALLPAPERS[0]);
+}
+function applyLook(){
+  if (getMode() === 'night'){
+    document.body.classList.add('dark');
+    document.body.style.background =
+      'radial-gradient(1000px 520px at 50% -10%, rgba(100,200,195,.14), transparent 60%),'+
+      'linear-gradient(180deg,#0e1220,#0a0e1a)';
+  } else {
+    applyWallpaper(currentWp(), false);
+  }
+}
+function updateModeBtn(){
+  const night = getMode() === 'night';
+  document.getElementById('modeLabel').textContent = night ? '日间' : '夜间';
+  document.querySelector('#modeBtn svg').innerHTML = night
+    ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'
+    : '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+}
+document.getElementById('modeBtn').addEventListener('click', function(){
+  const next = getMode() === 'night' ? 'day' : 'night';
+  try { localStorage.setItem(MODE_KEY, next); } catch(e){}
+  applyLook();
+  updateModeBtn();
+  toast(next === 'night' ? '已切换到夜间模式' : '已切换到日间模式');
+});
+
+// ===== 时钟颜色自定义 =====
+var CLOCK_PRESETS = ['#1a2136','#2f6bff','#e5484d','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4'];
+function getClockColor(){
+  try { return localStorage.getItem(CLOCK_COLOR_KEY) || ''; } catch(e){ return ''; }
+}
+function applyClockColor(c){
+  if (c) document.documentElement.style.setProperty('--clock-color', c);
+  else document.documentElement.style.removeProperty('--clock-color');
+}
+function openClockModal(){
+  const cur = (getClockColor() || '').toLowerCase();
+  const dots = CLOCK_PRESETS.map(c =>
+    '<button class="swatch-dot'+(c === cur ? ' active':'')+'" data-cc="'+c+'" style="background:'+c+'" title="'+c+'"></button>'
+  ).join('');
+  showModal('自定义时钟颜色',
+    '<div>点击预设色块，或用取色器选择任意颜色：</div>'+
+    '<div class="color-row">'+dots+'</div>'+
+    '<div class="color-pick"><input type="color" id="ccPicker" value="'+(getClockColor()||'#2f6bff')+'"><span>自定义任意颜色</span></div>'+
+    '<div class="tip">想恢复默认，点“恢复默认颜色”。</div>',
+    '<button class="btn" data-m="cc-reset" type="button">恢复默认颜色</button>'+
+    '<button class="btn primary" data-m="done" type="button">完成</button>'
+  );
+}
+document.getElementById('clockBtn').addEventListener('click', openClockModal);
+modalMask.addEventListener('click', function(e){
+  const dot = e.target.closest('[data-cc]');
+  if (dot){
+    applyClockColor(dot.dataset.cc);
+    try { localStorage.setItem(CLOCK_COLOR_KEY, dot.dataset.cc); } catch(e){}
+    openClockModal();
+    return;
+  }
+  const act = e.target.closest('[data-m]');
+  if (!act) return;
+  if (act.dataset.m === 'cc-reset'){
+    applyClockColor('');
+    try { localStorage.removeItem(CLOCK_COLOR_KEY); } catch(e){}
+    hideModal();
+  } else if (act.dataset.m === 'done'){
+    hideModal();
+  }
+});
+document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'ccPicker'){
+    applyClockColor(e.target.value);
+    try { localStorage.setItem(CLOCK_COLOR_KEY, e.target.value); } catch(e){}
+  }
+});
+
+// 初始化外观
+applyLook();
+updateModeBtn();
+applyClockColor(getClockColor());
 
 // ===== 时钟与问候 =====
 const week = ['日','一','二','三','四','五','六'];
@@ -511,15 +614,6 @@ document.getElementById('nameBtn').addEventListener('click', function(){
 });
 
 // ===== 导出 / 导入配置（便于换电脑迁移）=====
-const modalMask = document.getElementById('modalMask');
-function showModal(title, bodyHTML, footHTML){
-  document.getElementById('mTitle').textContent = title;
-  document.getElementById('mBody').innerHTML = bodyHTML;
-  document.getElementById('mFoot').innerHTML = footHTML;
-  modalMask.hidden = false;
-}
-function hideModal(){ modalMask.hidden = true; }
-
 function buildConfig(){
   let dataStr = localStorage.getItem(STORE_KEY);
   if (!dataStr){ try { dataStr = JSON.stringify(data); } catch(e){} }
@@ -528,7 +622,9 @@ function buildConfig(){
     data: dataStr,
     wallpaper: localStorage.getItem(WP_KEY) || 'light',
     customWp: localStorage.getItem(CUSTOM_WP_KEY),
-    name: localStorage.getItem(NAME_KEY) || getName() || ''
+    name: localStorage.getItem(NAME_KEY) || getName() || '',
+    mode: getMode(),
+    clockColor: getClockColor()
   };
 }
 function doExportConfig(){
@@ -590,6 +686,8 @@ document.getElementById('importFile').addEventListener('change', function(e){
       if (cfg.wallpaper) localStorage.setItem(WP_KEY, cfg.wallpaper);
       if (cfg.customWp) localStorage.setItem(CUSTOM_WP_KEY, cfg.customWp);
       if (cfg.name) localStorage.setItem(NAME_KEY, cfg.name);
+      if (cfg.mode) localStorage.setItem(MODE_KEY, cfg.mode === 'night' ? 'night' : 'day');
+      if (cfg.clockColor) localStorage.setItem(CLOCK_COLOR_KEY, cfg.clockColor);
       location.reload();
     } catch(err){
       toast('配置文件无效，导入失败');
