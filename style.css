@@ -61,8 +61,8 @@ body{
   color:var(--clock-color, var(--text));
 }
 .clock .ampm{font-size:.45em;color:var(--muted);font-weight:400;margin-left:8px;vertical-align:.4em}
-.date{margin-top:6px;color:var(--muted);font-size:15px;letter-spacing:.04em}
-.greet{margin-top:14px;color:var(--text);font-size:18px}
+.date{margin-top:6px;color:var(--date-color, var(--muted));font-size:15px;letter-spacing:.04em}
+.greet{margin-top:14px;color:var(--greet-color, var(--text));font-size:18px}
 
 .search{
   margin:24px auto 0;max-width:560px;
@@ -172,14 +172,35 @@ body.dark{
 }
 .wp-upload:hover{border-color:var(--accent);color:var(--accent)}
 
+/* ===== 更多折叠面板 ===== */
+.more-wrap{position:relative}
+.more-panel{
+  position:absolute;right:0;top:calc(100% + 10px);z-index:60;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:7px;width:172px;
+  box-shadow:0 8px 24px rgba(20,30,60,.14);
+  display:flex;flex-direction:column;gap:2px;
+}
+.more-panel .btn{
+  justify-content:flex-start;width:100%;
+  border:none;background:transparent;
+  padding:9px 10px;border-radius:8px;
+}
+.more-panel .btn:hover{background:var(--panel-2);border:none}
+#moreBtn svg{transition:transform .2s}
+#moreWrap.open #moreBtn svg{transform:rotate(180deg)}
+
 /* ===== 提示条 toast ===== */
 .toast{
-  position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:80;
-  background:var(--text);color:var(--bg);font-size:14px;
-  padding:10px 18px;border-radius:20px;opacity:0;pointer-events:none;
-  transition:opacity .25s, transform .25s;box-shadow:0 6px 20px rgba(20,30,60,.18);
+  position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(10px);z-index:80;
+  background:rgba(17,24,39,.95);color:#fff;font-size:15px;font-weight:500;
+  padding:13px 24px;border-radius:12px;opacity:0;pointer-events:none;
+  transition:opacity .25s, transform .25s;
+  box-shadow:0 12px 32px rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);
+  max-width:88vw;text-align:center;line-height:1.45;
 }
-.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ===== 引导弹窗 ===== */
 .modal-mask{
@@ -213,3 +234,24 @@ body.dark{
 .swatch-dot.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .color-pick{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--muted)}
 .color-pick input[type=color]{width:46px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:2px;cursor:pointer}
+
+/* 文字颜色目标切换 */
+.tc-tabs{display:flex;gap:8px;margin-top:6px}
+.tc-tab{flex:1;padding:11px 0;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-size:14px;cursor:pointer;color:var(--muted)}
+.tc-tab.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:600}
+.tc-section{margin-top:16px}
+.tc-section .lbl{font-size:13px;color:var(--muted);margin-bottom:8px}
+.swatch-dot.dot-white{border-color:#c3cad6}
+
+/* 日夜模式弹窗 */
+.mode-opt{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;margin-top:10px;cursor:pointer;background:var(--panel)}
+.mode-opt:hover{border-color:var(--accent)}
+.mode-opt.active{border-color:var(--accent);background:var(--accent-soft)}
+.mode-opt .mo-ic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--panel-2);color:var(--accent);flex:none}
+.mode-opt .mo-t{font-size:15px;font-weight:600}
+.mode-opt .mo-d{font-size:12px;color:var(--muted);margin-top:2px}
+.mode-opt .mo-radio{margin-left:auto;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none}
+.mode-opt.active .mo-radio{border:6px solid var(--accent)}
+.auto-times{display:flex;gap:14px;margin-top:12px;padding:14px;background:var(--soft);border-radius:12px}
+.auto-times .at{flex:1;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.auto-times input[type=time]{padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);font-size:15px}

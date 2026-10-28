@@ -4,6 +4,10 @@ const CUSTOM_WP_KEY = 'nav-page-custom-wp';
 const NAME_KEY = 'nav-page-name';
 const MODE_KEY = 'nav-page-mode';
 const CLOCK_COLOR_KEY = 'nav-page-clock-color';
+const DATE_COLOR_KEY = 'nav-page-date-color';
+const GREET_COLOR_KEY = 'nav-page-greet-color';
+const DAY_START_KEY = 'nav-page-day-start';
+const NIGHT_START_KEY = 'nav-page-night-start';
 
 const ICONS = {
   globe:   'M12 3v16M3 8h18M5 8a7 7 0 0 0 7 7 7 7 0 0 0 7-7',
@@ -67,7 +71,7 @@ const DEFAULT_DATA = [
     {name:'天气', url:'https://tianqi.qq.com', desc:'预报', icon:'weather'}
   ]},
   { id:'g3', title:'娱乐', links:[
-    {name:'哔哩哔哩', url:'https://www.bilibili.com', desc:'视频', icon:'video', app:'bilibili://'},
+    {name:'哔哩哔哩', url:'https://www.bilibili.com', desc:'视频', icon:'video', app:'bilibili://home'},
     {name:'抖音', url:'https://www.douyin.com', desc:'短视频', icon:'video', app:'snssdk1128://'},
     {name:'油管', url:'https://www.youtube.com', desc:'视频', icon:'video', app:'youtube://'},
     {name:'微博', url:'https://weibo.com', desc:'热点', icon:'at', app:'sinaweibo://'},
@@ -76,8 +80,8 @@ const DEFAULT_DATA = [
   { id:'g4', title:'生活', links:[
     {name:'京东', url:'https://www.jd.com', desc:'购物', icon:'cart', app:'openapp.jdmobile://'},
     {name:'淘宝', url:'https://www.taobao.com', desc:'购物', icon:'bag', app:'taobao://'},
-    {name:'拼多多', url:'https://www.pinduoduo.com', desc:'购物', icon:'bag', app:'pinduoduo://'},
-    {name:'美团', url:'https://www.meituan.com', desc:'生活', icon:'shield', app:'imeituan://'},
+    {name:'拼多多', url:'https://www.pinduoduo.com', desc:'购物', icon:'bag', app:'pinduoduo://com.xunmeng.pinduoduo/'},
+    {name:'美团', url:'https://www.meituan.com', desc:'生活', icon:'shield', app:'imeituan://www.meituan.com/'},
     {name:'铁路12306', url:'https://www.12306.cn', desc:'出行', icon:'train', app:'cn.12306://'}
   ]},
   { id:'g5', title:'学术', links:[
@@ -105,13 +109,12 @@ const DEFAULT_DATA = [
     {name:'大数据和网络管理中心', url:'https://nic.jlu.edu.cn', desc:'网络', icon:'globe'}
   ]},
   { id:'g8', title:'教学与教务', links:[
-    {name:'教务管理系统', url:'https://iedu.jlu.edu.cn', desc:'教务', icon:'doc'},
+    {name:'研究生服务平台', url:'https://yjs.jlu.edu.cn/gsapp/sys/yjsemaphome/portal/index.do', desc:'研究生', icon:'doc'},
     {name:'选课平台', url:'https://icourses.jlu.edu.cn', desc:'选课', icon:'book'},
     {name:'学在吉大', url:'https://ilearntec.jlu.edu.cn', desc:'课程回放', icon:'video'},
     {name:'在线学堂', url:'http://jlu.benke.chaoxing.com', desc:'网课', icon:'video'},
     {name:'本科教学信息网', url:'http://jwc.jlu.edu.cn', desc:'教务处', icon:'doc'},
     {name:'研究生院', url:'http://yjsy.jlu.edu.cn', desc:'研究生', icon:'doc'},
-    {name:'研究生教育管理', url:'http://gim.jlu.edu.cn', desc:'研究生', icon:'doc'},
     {name:'教学质量管理平台', url:'https://ievaluate.jlu.edu.cn', desc:'教评', icon:'doc'},
     {name:'开放性创新实验', url:'https://oep.jlu.edu.cn', desc:'实验', icon:'doc'},
     {name:'考试中心', url:'http://kszx.jlu.edu.cn', desc:'考试', icon:'doc'},
@@ -179,13 +182,14 @@ const grid = document.getElementById('grid');
 // ===== 分组 HTML =====
 function groupViewHTML(g){
   return '<section class="group" data-gid="'+g.id+'"><h2><span class="dot"></span>'+esc(g.title)+'</h2><div class="links">'+
-    g.links.map(l =>
-      '<a class="link" href="'+esc(l.url)+'"'+(l.app?' data-app="'+esc(l.app)+'"':'')+' target="_blank" rel="noopener">'+
-      '<span class="ic">'+svg(l.icon)+'</span>'+
-      '<span class="nm">'+esc(l.name)+'</span>'+
-      (l.desc ? '<span class="ds">'+esc(l.desc)+'</span>' : '')+
-      '</a>'
-    ).join('')+'</div></section>';
+    g.links.map(l => {
+      const app = l.app || schemeFor(l.url);
+      return '<a class="link" href="'+esc(l.url)+'"'+(app?' data-app="'+esc(app)+'"':'')+' target="_blank" rel="noopener">'+
+        '<span class="ic">'+svg(l.icon)+'</span>'+
+        '<span class="nm">'+esc(l.name)+'</span>'+
+        (l.desc ? '<span class="ds">'+esc(l.desc)+'</span>' : '')+
+        '</a>';
+    }).join('')+'</div></section>';
 }
 
 const iconOpts = Object.keys(ICONS).map(k => '<option value="'+k+'">'+ICON_NAMES[k]+'</option>').join('');
@@ -277,7 +281,7 @@ document.getElementById('cancelBtn').addEventListener('click', function(){
 });
 
 document.getElementById('resetBtn').addEventListener('click', function(){
-  if (!confirm('确定恢复默认吗？你的分组、壁纸、名字、日夜模式、时钟颜色都将被清除。')) return;
+  if (!confirm('确定恢复默认吗？你的分组、壁纸、名字、日夜模式、文字颜色都将被清除。')) return;
   data = clone(DEFAULT_DATA);
   try {
     localStorage.removeItem(STORE_KEY);
@@ -286,8 +290,14 @@ document.getElementById('resetBtn').addEventListener('click', function(){
     localStorage.removeItem(NAME_KEY);
     localStorage.removeItem(MODE_KEY);
     localStorage.removeItem(CLOCK_COLOR_KEY);
+    localStorage.removeItem(DATE_COLOR_KEY);
+    localStorage.removeItem(GREET_COLOR_KEY);
+    localStorage.removeItem(DAY_START_KEY);
+    localStorage.removeItem(NIGHT_START_KEY);
   } catch(e){}
   document.documentElement.style.removeProperty('--clock-color');
+  document.documentElement.style.removeProperty('--date-color');
+  document.documentElement.style.removeProperty('--greet-color');
   applyLook();
   updateModeBtn();
   editing = false;
@@ -363,6 +373,27 @@ grid.addEventListener('click', function(e){
 });
 
 // ===== 手机端唤起 APP（PC 端正常打开网页）=====
+// 按网址自动匹配 APP scheme（兼容旧数据 / 未手动填写的链接）
+const APP_BY_HOST = [
+  [/jd\.com/i, 'openapp.jdmobile://'],
+  [/taobao\.com/i, 'taobao://'],
+  [/pinduoduo\.com/i, 'pinduoduo://com.xunmeng.pinduoduo/'],
+  [/meituan\.com/i, 'imeituan://www.meituan.com/'],
+  [/12306\.cn/i, 'cn.12306://'],
+  [/bilibili\.com/i, 'bilibili://home'],
+  [/douyin\.com/i, 'snssdk1128://'],
+  [/youtube\.com/i, 'youtube://'],
+  [/weibo\.com/i, 'sinaweibo://'],
+  [/xiaohongshu\.com/i, 'xhsdiscover://'],
+  [/amap\.com/i, 'androidamap://'],
+  [/map\.baidu\.com/i, 'baidumap://']
+];
+function schemeFor(url){
+  for (let i = 0; i < APP_BY_HOST.length; i++){
+    if (APP_BY_HOST[i][0].test(url)) return APP_BY_HOST[i][1];
+  }
+  return '';
+}
 function isMobile(){
   return /Android|webOS|iPhone|iPad|iPod|HarmonyOS|BlackBerry|Mobile/i.test(navigator.userAgent);
 }
@@ -372,6 +403,7 @@ grid.addEventListener('click', function(e){
   const app = a.dataset.app;
   if (!(isMobile() && app)) return; // PC 或无 scheme：按默认行为打开网页
   e.preventDefault();
+  toast('正在打开 APP，若未安装将打开网页');
   const webUrl = a.href;
   let done = false;
   const fallback = setTimeout(function(){
@@ -489,9 +521,50 @@ function showModal(title, bodyHTML, footHTML){
 }
 function hideModal(){ modalMask.hidden = true; }
 
+// ===== 更多折叠面板 =====
+const moreWrap = document.getElementById('moreWrap');
+const morePanel = document.getElementById('morePanel');
+const moreBtn = document.getElementById('moreBtn');
+function setMore(open){
+  moreWrap.classList.toggle('open', open);
+  morePanel.hidden = !open;
+}
+moreBtn.addEventListener('click', function(e){
+  e.stopPropagation();
+  setMore(morePanel.hidden);
+});
+morePanel.addEventListener('click', function(){
+  setTimeout(function(){ setMore(false); }, 60);
+});
+document.addEventListener('click', function(e){
+  if (!moreWrap.contains(e.target)) setMore(false);
+});
+
 // ===== 日夜模式 + 外观应用 =====
+function getRawMode(){
+  try { return localStorage.getItem(MODE_KEY) || 'day'; } catch(e){ return 'day'; }
+}
+function toMin(t){
+  const p = String(t).split(':');
+  return (parseInt(p[0],10)||0)*60 + (parseInt(p[1],10)||0);
+}
+function autoMode(){
+  let ds = '07:00', ns = '19:00';
+  try {
+    ds = localStorage.getItem(DAY_START_KEY) || ds;
+    ns = localStorage.getItem(NIGHT_START_KEY) || ns;
+  } catch(e){}
+  const now = new Date();
+  const cur = now.getHours()*60 + now.getMinutes();
+  const d = toMin(ds), n = toMin(ns);
+  if (d === n) return 'day';
+  if (d < n) return (cur >= d && cur < n) ? 'day' : 'night';
+  return (cur >= d || cur < n) ? 'day' : 'night';
+}
 function getMode(){
-  try { return localStorage.getItem(MODE_KEY) === 'night' ? 'night' : 'day'; } catch(e){ return 'day'; }
+  const raw = getRawMode();
+  if (raw === 'auto') return autoMode();
+  return raw === 'night' ? 'night' : 'day';
 }
 function currentWp(){
   const id = currentWpId();
@@ -508,73 +581,144 @@ function applyLook(){
   }
 }
 function updateModeBtn(){
-  const night = getMode() === 'night';
-  document.getElementById('modeLabel').textContent = night ? '日间' : '夜间';
-  document.querySelector('#modeBtn svg').innerHTML = night
-    ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'
-    : '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+  const raw = getRawMode();
+  const label = document.getElementById('modeLabel');
+  const svgEl = document.querySelector('#modeBtn svg');
+  const sun = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  const moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+  if (raw === 'auto'){ label.textContent = '自动日夜'; svgEl.innerHTML = sun; }
+  else if (getMode() === 'night'){ label.textContent = '夜间'; svgEl.innerHTML = moon; }
+  else { label.textContent = '日间'; svgEl.innerHTML = sun; }
 }
-document.getElementById('modeBtn').addEventListener('click', function(){
-  const next = getMode() === 'night' ? 'day' : 'night';
-  try { localStorage.setItem(MODE_KEY, next); } catch(e){}
+document.getElementById('modeBtn').addEventListener('click', openModeModal);
+
+// ===== 日夜模式设置弹窗（含自动定时）=====
+function openModeModal(){
+  const raw = getRawMode();
+  let ds = '07:00', ns = '19:00';
+  try {
+    ds = localStorage.getItem(DAY_START_KEY) || ds;
+    ns = localStorage.getItem(NIGHT_START_KEY) || ns;
+  } catch(e){}
+  const sun = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  const moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+  const auto = '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/>';
+  function opt(v, ic, t, d){
+    return '<div class="mode-opt'+(raw===v?' active':'')+'" data-mode="'+v+'">'+
+      '<span class="mo-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ic+'</svg></span>'+
+      '<span><span class="mo-t">'+t+'</span><span class="mo-d">'+d+'</span></span>'+
+      '<span class="mo-radio"></span></div>';
+  }
+  const body =
+    opt('day', sun, '日间模式', '始终保持明亮浅色')+
+    opt('night', moon, '夜间模式', '始终保持深色护眼')+
+    opt('auto', auto, '自动跟随时间', '按设定时间自动切换日夜')+
+    '<div class="auto-times" id="autoTimes" style="'+(raw==='auto'?'':'display:none')+'">'+
+      '<span class="at">白天开始<input type="time" id="dayStart" value="'+ds+'"></span>'+
+      '<span class="at">夜晚开始<input type="time" id="nightStart" value="'+ns+'"></span>'+
+    '</div>';
+  showModal('日夜模式', body,
+    '<button class="btn primary" data-m="done" type="button">完成</button>');
+}
+modalMask.addEventListener('click', function(e){
+  const o = e.target.closest('[data-mode]');
+  if (!o) return;
+  const v = o.dataset.mode;
+  try { localStorage.setItem(MODE_KEY, v); } catch(e){}
+  // 自动模式：展开时间设置
+  const at = document.getElementById('autoTimes');
+  if (at) at.style.display = v === 'auto' ? 'flex' : 'none';
+  openModeModal();
   applyLook();
   updateModeBtn();
-  toast(next === 'night' ? '已切换到夜间模式' : '已切换到日间模式');
 });
+// 自动模式下保存时间
+modalMask.addEventListener('change', function(e){
+  if (e.target.id === 'dayStart'){ try { localStorage.setItem(DAY_START_KEY, e.target.value); } catch(err){} applyLook(); }
+  if (e.target.id === 'nightStart'){ try { localStorage.setItem(NIGHT_START_KEY, e.target.value); } catch(err){} applyLook(); }
+});
+// 定时检查：自动模式到点自动切换
+setInterval(function(){
+  if (getRawMode() === 'auto'){
+    const m = getMode();
+    const isDark = document.body.classList.contains('dark');
+    if ((m === 'night') !== isDark){ applyLook(); updateModeBtn(); }
+  }
+}, 30000);
 
-// ===== 时钟颜色自定义 =====
-var CLOCK_PRESETS = ['#1a2136','#2f6bff','#e5484d','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4'];
-function getClockColor(){
-  try { return localStorage.getItem(CLOCK_COLOR_KEY) || ''; } catch(e){ return ''; }
+// ===== 文字颜色自定义（时钟 / 日期 / 欢迎语）=====
+var TEXT_PRESETS = ['#1a2136','#ffffff','#2f6bff','#e5484d','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4'];
+var TEXT_META = [
+  { key:'clock', label:'时钟', storage:CLOCK_COLOR_KEY, css:'--clock-color' },
+  { key:'date', label:'日期', storage:DATE_COLOR_KEY, css:'--date-color' },
+  { key:'greet', label:'欢迎语', storage:GREET_COLOR_KEY, css:'--greet-color' }
+];
+function metaByKey(k){
+  for (var i=0;i<TEXT_META.length;i++){ if (TEXT_META[i].key===k) return TEXT_META[i]; }
+  return TEXT_META[0];
 }
-function applyClockColor(c){
-  if (c) document.documentElement.style.setProperty('--clock-color', c);
-  else document.documentElement.style.removeProperty('--clock-color');
+function getTextColor(meta){
+  try { return localStorage.getItem(meta.storage) || ''; } catch(e){ return ''; }
 }
-function openClockModal(){
-  const cur = (getClockColor() || '').toLowerCase();
-  const dots = CLOCK_PRESETS.map(c =>
-    '<button class="swatch-dot'+(c === cur ? ' active':'')+'" data-cc="'+c+'" style="background:'+c+'" title="'+c+'"></button>'
+function applyTextColor(meta, c){
+  if (c) document.documentElement.style.setProperty(meta.css, c);
+  else document.documentElement.style.removeProperty(meta.css);
+}
+var tcTarget = 'clock';
+function openTextColorModal(){
+  const meta = metaByKey(tcTarget);
+  const cur = (getTextColor(meta) || '').toLowerCase();
+  const tabs = TEXT_META.map(m =>
+    '<button class="tc-tab'+(m.key===meta.key?' active':'')+'" data-tc-tab="'+m.key+'">'+m.label+'</button>'
   ).join('');
-  showModal('自定义时钟颜色',
-    '<div>点击预设色块，或用取色器选择任意颜色：</div>'+
-    '<div class="color-row">'+dots+'</div>'+
-    '<div class="color-pick"><input type="color" id="ccPicker" value="'+(getClockColor()||'#2f6bff')+'"><span>自定义任意颜色</span></div>'+
-    '<div class="tip">想恢复默认，点“恢复默认颜色”。</div>',
-    '<button class="btn" data-m="cc-reset" type="button">恢复默认颜色</button>'+
+  const dots = TEXT_PRESETS.map(c => {
+    const isWhite = c.toLowerCase() === '#ffffff';
+    return '<button class="swatch-dot'+(isWhite?' dot-white':'')+(c===cur?' active':'')+'" data-tc="'+c+'" style="background:'+c+'" title="'+c+'"></button>';
+  }).join('');
+  const body =
+    '<div class="tc-section"><div class="lbl">选择要调整的文字：</div><div class="tc-tabs">'+tabs+'</div></div>'+
+    '<div class="tc-section"><div class="lbl">预设颜色（含白色）：</div><div class="color-row">'+dots+'</div></div>'+
+    '<div class="tc-section"><div class="lbl">自定义任意颜色：</div>'+
+      '<div class="color-pick"><input type="color" id="tcPicker" value="'+(getTextColor(meta)||'#2f6bff')+'"><span>为「'+meta.label+'」挑选任意颜色</span></div></div>';
+  showModal('自定义文字颜色', body,
+    '<button class="btn" data-tc-reset="1" type="button">恢复该项默认</button>'+
     '<button class="btn primary" data-m="done" type="button">完成</button>'
   );
 }
-document.getElementById('clockBtn').addEventListener('click', openClockModal);
+document.getElementById('clockBtn').addEventListener('click', function(){ tcTarget='clock'; openTextColorModal(); });
 modalMask.addEventListener('click', function(e){
-  const dot = e.target.closest('[data-cc]');
+  const tab = e.target.closest('[data-tc-tab]');
+  if (tab){ tcTarget = tab.dataset.tcTab; openTextColorModal(); return; }
+  const dot = e.target.closest('[data-tc]');
   if (dot){
-    applyClockColor(dot.dataset.cc);
-    try { localStorage.setItem(CLOCK_COLOR_KEY, dot.dataset.cc); } catch(e){}
-    openClockModal();
+    const meta = metaByKey(tcTarget);
+    applyTextColor(meta, dot.dataset.tc);
+    try { localStorage.setItem(meta.storage, dot.dataset.tc); } catch(err){}
+    openTextColorModal();
     return;
   }
-  const act = e.target.closest('[data-m]');
-  if (!act) return;
-  if (act.dataset.m === 'cc-reset'){
-    applyClockColor('');
-    try { localStorage.removeItem(CLOCK_COLOR_KEY); } catch(e){}
-    hideModal();
-  } else if (act.dataset.m === 'done'){
-    hideModal();
+  const act = e.target.closest('[data-tc-reset]');
+  if (act){
+    const meta = metaByKey(tcTarget);
+    applyTextColor(meta, '');
+    try { localStorage.removeItem(meta.storage); } catch(err){}
+    openTextColorModal();
+    return;
   }
+  if (e.target.closest('[data-m="done"]')){ hideModal(); }
 });
 document.addEventListener('input', function(e){
-  if (e.target && e.target.id === 'ccPicker'){
-    applyClockColor(e.target.value);
-    try { localStorage.setItem(CLOCK_COLOR_KEY, e.target.value); } catch(e){}
+  if (e.target && e.target.id === 'tcPicker'){
+    const meta = metaByKey(tcTarget);
+    applyTextColor(meta, e.target.value);
+    try { localStorage.setItem(meta.storage, e.target.value); } catch(err){}
   }
 });
 
 // 初始化外观
 applyLook();
 updateModeBtn();
-applyClockColor(getClockColor());
+TEXT_META.forEach(function(m){ applyTextColor(m, getTextColor(m)); });
 
 // ===== 时钟与问候 =====
 const week = ['日','一','二','三','四','五','六'];
@@ -623,8 +767,12 @@ function buildConfig(){
     wallpaper: localStorage.getItem(WP_KEY) || 'light',
     customWp: localStorage.getItem(CUSTOM_WP_KEY),
     name: localStorage.getItem(NAME_KEY) || getName() || '',
-    mode: getMode(),
-    clockColor: getClockColor()
+    mode: getRawMode(),
+    clockColor: getTextColor(metaByKey('clock')),
+    dateColor: getTextColor(metaByKey('date')),
+    greetColor: getTextColor(metaByKey('greet')),
+    dayStart: localStorage.getItem(DAY_START_KEY) || '07:00',
+    nightStart: localStorage.getItem(NIGHT_START_KEY) || '19:00'
   };
 }
 function doExportConfig(){
@@ -686,8 +834,12 @@ document.getElementById('importFile').addEventListener('change', function(e){
       if (cfg.wallpaper) localStorage.setItem(WP_KEY, cfg.wallpaper);
       if (cfg.customWp) localStorage.setItem(CUSTOM_WP_KEY, cfg.customWp);
       if (cfg.name) localStorage.setItem(NAME_KEY, cfg.name);
-      if (cfg.mode) localStorage.setItem(MODE_KEY, cfg.mode === 'night' ? 'night' : 'day');
+      if (cfg.mode) localStorage.setItem(MODE_KEY, cfg.mode === 'auto' ? 'auto' : (cfg.mode === 'night' ? 'night' : 'day'));
       if (cfg.clockColor) localStorage.setItem(CLOCK_COLOR_KEY, cfg.clockColor);
+      if (cfg.dateColor) localStorage.setItem(DATE_COLOR_KEY, cfg.dateColor);
+      if (cfg.greetColor) localStorage.setItem(GREET_COLOR_KEY, cfg.greetColor);
+      if (cfg.dayStart) localStorage.setItem(DAY_START_KEY, cfg.dayStart);
+      if (cfg.nightStart) localStorage.setItem(NIGHT_START_KEY, cfg.nightStart);
       location.reload();
     } catch(err){
       toast('配置文件无效，导入失败');
