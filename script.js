@@ -1,5 +1,6 @@
 const STORE_KEY = 'nav-page-data-v1';
 const WP_KEY = 'nav-page-wallpaper';
+const CUSTOM_WP_KEY = 'nav-page-custom-wp';
 const NAME_KEY = 'nav-page-name';
 
 const ICONS = {
@@ -360,16 +361,35 @@ const wpPanel = document.getElementById('wpPanel');
 function currentWpId(){
   try { return localStorage.getItem(WP_KEY) || 'light'; } catch(e){ return 'light'; }
 }
+function customWpUrl(){
+  try { return localStorage.getItem(CUSTOM_WP_KEY) || ''; } catch(e){ return ''; }
+}
 function applyWallpaper(wp, save){
-  document.body.style.background = wp.bg;
-  document.body.classList.toggle('dark', !!wp.dark);
+  if (wp.id === 'custom'){
+    const url = customWpUrl();
+    if (url){
+      document.body.style.background = "url('" + url + "') center/cover no-repeat fixed";
+      document.body.classList.remove('dark');
+    }
+  } else {
+    document.body.style.background = wp.bg;
+    document.body.classList.toggle('dark', !!wp.dark);
+  }
   if (save){ try { localStorage.setItem(WP_KEY, wp.id); } catch(e){} }
 }
 function renderWpPanel(){
   const cur = currentWpId();
-  wpPanel.innerHTML = WALLPAPERS.map(w =>
+  const customUrl = customWpUrl();
+  let html = WALLPAPERS.map(w =>
     '<button class="wp-swatch'+(w.id === cur ? ' active' : '')+'" data-wp="'+w.id+'" style="background:'+w.bg+'" title="'+w.name+'"><span class="nm">'+w.name+'</span></button>'
   ).join('');
+  html += '<button class="wp-swatch wp-custom'+(cur === 'custom' ? ' active' : '')+'" data-wp="custom"'+
+    (customUrl ? ' style="background:url(\''+customUrl+'\') center/cover no-repeat"' : '')+
+    ' title="自定义壁纸"><span class="nm">自定义</span></button>';
+  html += '<button class="wp-upload" data-wp="upload" type="button">'+
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>'+
+    '上传图片</button>';
+  wpPanel.innerHTML = html;
 }
 function setWpPanel(show){
   if (show) renderWpPanel();
@@ -382,18 +402,50 @@ wpBtn.addEventListener('click', function(e){
 wpPanel.addEventListener('click', function(e){
   const sw = e.target.closest('[data-wp]');
   if (!sw) return;
-  const wp = WALLPAPERS.find(w => w.id === sw.dataset.wp);
+  if (sw.dataset.wp === 'upload'){
+    document.getElementById('wpFile').click();
+    return;
+  }
+  const wp = sw.dataset.wp === 'custom'
+    ? { id:'custom' }
+    : WALLPAPERS.find(w => w.id === sw.dataset.wp);
+  if (!wp) return;
   applyWallpaper(wp, true);
   renderWpPanel();
   setWpPanel(false);
-  toast('壁纸已切换：'+wp.name);
+  toast('壁纸已切换：' + (wp.id === 'custom' ? '自定义' : wp.name));
+});
+// 上传自定义壁纸（无损：直接读原图，不做压缩）
+document.getElementById('wpFile').addEventListener('change', function(){
+  const f = this.files && this.files[0];
+  this.value = '';
+  if (!f) return;
+  if (!/^image\//.test(f.type)){ toast('请选择图片文件'); return; }
+  const reader = new FileReader();
+  reader.onload = function(){
+    const url = reader.result;
+    try {
+      localStorage.setItem(CUSTOM_WP_KEY, url);
+      localStorage.setItem(WP_KEY, 'custom');
+    } catch(err){
+      toast('图片过大，本地存储约 5MB 上限，无法无损保存');
+      return;
+    }
+    applyWallpaper({ id:'custom' }, true);
+    renderWpPanel();
+    setWpPanel(false);
+    toast('已应用自定义壁纸');
+  };
+  reader.onerror = function(){ toast('读取图片失败'); };
+  reader.readAsDataURL(f);
 });
 document.addEventListener('click', function(e){
   if (!document.getElementById('wpWrap').contains(e.target)) setWpPanel(false);
 });
 // 初始化壁纸
 (function(){
-  const wp = WALLPAPERS.find(w => w.id === currentWpId()) || WALLPAPERS[0];
+  const id = currentWpId();
+  const wp = WALLPAPERS.find(w => w.id === id) || (id === 'custom' ? { id:'custom' } : WALLPAPERS[0]);
   applyWallpaper(wp, false);
 })();
 
@@ -447,6 +499,64 @@ document.getElementById('searchForm').addEventListener('submit', function(e){
   if (!kw) return;
   window.open(engines[document.getElementById('engine').value] + encodeURIComponent(kw), '_blank', 'noopener');
 });
+
+// ===== 天气（定位显示城市 + 晴雨 + 摄氏度）=====
+const W_CODE = {
+  0:['晴','sun'], 1:['多云','cloud'], 2:['多云','cloud'], 3:['阴','cloud'],
+  45:['雾','fog'], 48:['雾','fog'],
+  51:['毛毛雨','drizzle'], 53:['毛毛雨','drizzle'], 55:['毛毛雨','drizzle'], 56:['冻雨','drizzle'], 57:['冻雨','drizzle'],
+  61:['小雨','rain'], 63:['中雨','rain'], 65:['大雨','rain'], 66:['冻雨','rain'], 67:['冻雨','rain'],
+  71:['小雪','snow'], 73:['中雪','snow'], 75:['大雪','snow'], 77:['雪','snow'],
+  80:['阵雨','rain'], 81:['阵雨','rain'], 82:['强阵雨','rain'], 85:['阵雪','snow'], 86:['阵雪','snow'],
+  95:['雷暴','thunder'], 96:['雷暴','thunder'], 99:['雷暴','thunder']
+};
+const W_ICON = {
+  sun:'<path d="M12 3v3M12 21v3M3 12h3M18 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/><circle cx="12" cy="12" r="4"/>',
+  cloud:'<path d="M6 20a4 4 0 0 1-.5-7.97A5 5 0 0 1 15 10a4 4 0 0 1 0 8z"/>',
+  fog:'<path d="M6 6h12M6 10h12M6 14h12M6 18h12"/>',
+  drizzle:'<path d="M6 14a4 4 0 0 1-.5-7.97A5 5 0 0 1 15 10a4 4 0 0 1 0 8zM8 18l1-2M12 18l1-2M16 18l1-2"/>',
+  rain:'<path d="M6 14a4 4 0 0 1-.5-7.97A5 5 0 0 1 15 10a4 4 0 0 1 0 8zM9 19l1-3M13 19l1-3M17 19l1-3"/>',
+  snow:'<path d="M6 14a4 4 0 0 1-.5-7.97A5 5 0 0 1 15 10a4 4 0 0 1 0 8zM12 18v2M12 21v1M8 19l1 1M16 19l-1 1"/>',
+  thunder:'<path d="M6 14a4 4 0 0 1-.5-7.97A5 5 0 0 1 15 10a4 4 0 0 1 0 8zM11 18l-2 4h5l-2 4"/>'
+};
+function setWeather(code, temp, city){
+  const arr = W_CODE[code] || ['晴','sun'];
+  document.getElementById('wIc').innerHTML =
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(W_ICON[arr[1]]||W_ICON.sun)+'</svg>';
+  document.getElementById('wTemp').textContent = (temp === '--' || temp == null) ? '--°' : Math.round(temp) + '°';
+  document.getElementById('wCity').textContent = city ? city + ' · ' + arr[0] : arr[0];
+}
+function fetchWeather(lat, lon, cityHint){
+  const pGeo = fetch('https://geocoding-api.open-meteo.com/v1/reverse?latitude='+lat+'&longitude='+lon+'&language=zh')
+    .then(function(r){ return r.json(); })
+    .then(function(g){ return (g && (g.city || g.name)) ? (g.city || g.name) : (cityHint || ''); })
+    .catch(function(){ return cityHint || ''; });
+  const pWx = fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,weather_code&timezone=auto')
+    .then(function(r){ return r.json(); })
+    .catch(function(){ return null; });
+  Promise.all([pGeo, pWx]).then(function(res){
+    const city = res[0]; const d = res[1];
+    if (d && d.current) setWeather(d.current.weather_code, d.current.temperature_2m, city);
+    else setWeather(0, '--', city || '天气获取失败');
+  });
+}
+function loadWeather(){
+  const ipFallback = function(){
+    fetch('https://ipapi.co/json/').then(function(r){ return r.json(); }).then(function(d){
+      if (d && typeof d.latitude === 'number'){
+        fetchWeather(d.latitude, d.longitude, d.city || d.region || '');
+      } else setWeather(0, '--', '无法定位');
+    }).catch(function(){ setWeather(0, '--', '无法定位'); });
+  };
+  if (navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      function(pos){ fetchWeather(pos.coords.latitude, pos.coords.longitude, ''); },
+      ipFallback,
+      { timeout: 7000 }
+    );
+  } else ipFallback();
+}
+loadWeather();
 
 // ===== 回到顶部 =====
 document.getElementById('reset').addEventListener('click', function(e){
