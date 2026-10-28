@@ -180,3 +180,29 @@ body.dark{
   transition:opacity .25s, transform .25s;box-shadow:0 6px 20px rgba(20,30,60,.18);
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+/* ===== 引导弹窗 ===== */
+.modal-mask{
+  position:fixed;inset:0;z-index:90;
+  background:rgba(20,30,55,.45);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(3px);
+}
+.modal-mask[hidden]{display:none}
+.modal{
+  width:100%;max-width:460px;
+  background:var(--card);border-radius:16px;
+  box-shadow:0 20px 60px rgba(20,30,60,.25);
+  overflow:hidden;animation:mPop .2s ease;
+}
+@keyframes mPop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.m-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.m-title{font-size:16px;font-weight:700;color:var(--text)}
+.m-close{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:none;background:transparent;color:var(--muted);border-radius:8px;cursor:pointer}
+.m-close:hover{background:var(--soft);color:var(--text)}
+.m-body{padding:18px 20px;font-size:14px;line-height:1.7;color:var(--text)}
+.m-body ol{margin:0;padding-left:20px}
+.m-body li{margin-bottom:8px}
+.m-body .tip{margin-top:12px;padding:10px 12px;background:var(--soft);border-radius:10px;font-size:13px;color:var(--muted)}
+.m-body b{color:var(--accent)}
+.m-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}

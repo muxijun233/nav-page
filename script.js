@@ -511,14 +511,28 @@ document.getElementById('nameBtn').addEventListener('click', function(){
 });
 
 // ===== 导出 / 导入配置（便于换电脑迁移）=====
-document.getElementById('exportBtn').addEventListener('click', function(){
-  const cfg = {
+const modalMask = document.getElementById('modalMask');
+function showModal(title, bodyHTML, footHTML){
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mBody').innerHTML = bodyHTML;
+  document.getElementById('mFoot').innerHTML = footHTML;
+  modalMask.hidden = false;
+}
+function hideModal(){ modalMask.hidden = true; }
+
+function buildConfig(){
+  let dataStr = localStorage.getItem(STORE_KEY);
+  if (!dataStr){ try { dataStr = JSON.stringify(data); } catch(e){} }
+  return {
     app: 'nav-page',
-    data: localStorage.getItem(STORE_KEY),
-    wallpaper: localStorage.getItem(WP_KEY),
+    data: dataStr,
+    wallpaper: localStorage.getItem(WP_KEY) || 'light',
     customWp: localStorage.getItem(CUSTOM_WP_KEY),
-    name: localStorage.getItem(NAME_KEY)
+    name: localStorage.getItem(NAME_KEY) || getName() || ''
   };
+}
+function doExportConfig(){
+  const cfg = buildConfig();
   const blob = new Blob([JSON.stringify(cfg, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -527,11 +541,44 @@ document.getElementById('exportBtn').addEventListener('click', function(){
   a.click();
   a.remove();
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
-  toast('配置已导出');
+  toast('配置已导出，请留意浏览器下载');
+}
+
+document.getElementById('exportBtn').addEventListener('click', function(){
+  showModal('导出配置到新电脑',
+    '<ol>'+
+    '<li>点下方<b>开始导出</b>，浏览器会下载 <b>nav-config.json</b>。</li>'+
+    '<li>若弹出“另存为”窗口，请在左侧选择<b>桌面</b>并保存；若没有弹窗，文件在“下载”文件夹，可手动移到桌面。</li>'+
+    '<li>把 nav-config.json 通过微信 / U盘 / 网盘发送到新电脑。</li>'+
+    '<li>在新电脑打开导航页，点“导入”，选择这个文件即可。</li>'+
+    '</ol>'+
+    '<div class="tip">想让浏览器每次都问保存位置：Edge 设置 → 下载 → 打开“每次下载都询问我该做些什么”。</div>',
+    '<button class="btn" data-m="cancel" type="button">取消</button>'+
+    '<button class="btn primary" data-m="export" type="button">开始导出</button>'
+  );
 });
+
 document.getElementById('importBtn').addEventListener('click', function(){
-  document.getElementById('importFile').click();
+  showModal('导入配置',
+    '<ol>'+
+    '<li>点下方<b>选择文件</b>，在弹出的窗口找到 <b>nav-config.json</b>（如桌面、U盘）。</li>'+
+    '<li>选中后页面会自动刷新并恢复你的分组、壁纸和名字。</li>'+
+    '</ol>'+
+    '<div class="tip">请使用之前“导出”得到的 nav-config.json。</div>',
+    '<button class="btn" data-m="cancel" type="button">取消</button>'+
+    '<button class="btn primary" data-m="import" type="button">选择文件</button>'
+  );
 });
+
+modalMask.addEventListener('click', function(e){
+  if (e.target === modalMask || e.target.closest('#mClose')){ hideModal(); return; }
+  const act = e.target.closest('[data-m]');
+  if (!act) return;
+  if (act.dataset.m === 'cancel'){ hideModal(); }
+  else if (act.dataset.m === 'export'){ hideModal(); doExportConfig(); }
+  else if (act.dataset.m === 'import'){ hideModal(); document.getElementById('importFile').click(); }
+});
+
 document.getElementById('importFile').addEventListener('change', function(e){
   const file = e.target.files && e.target.files[0];
   if (!file) return;
