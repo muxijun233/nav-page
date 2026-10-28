@@ -60,23 +60,23 @@ const DEFAULT_DATA = [
     {name:'网易邮箱', url:'https://mail.163.com', desc:'邮件', icon:'mail'},
     {name:'谷歌邮箱', url:'https://mail.google.com', desc:'邮件', icon:'mail'},
     {name:'知网翻译', url:'https://dict.cnki.net', desc:'翻译', icon:'translate'},
-    {name:'高德地图', url:'https://ditu.amap.com', desc:'出行', icon:'map'},
-    {name:'百度地图', url:'https://map.baidu.com', desc:'出行', icon:'map'},
+    {name:'高德地图', url:'https://ditu.amap.com', desc:'出行', icon:'map', app:'androidamap://'},
+    {name:'百度地图', url:'https://map.baidu.com', desc:'出行', icon:'map', app:'baidumap://'},
     {name:'天气', url:'https://tianqi.qq.com', desc:'预报', icon:'weather'}
   ]},
   { id:'g3', title:'娱乐', links:[
-    {name:'哔哩哔哩', url:'https://www.bilibili.com', desc:'视频', icon:'video'},
-    {name:'抖音', url:'https://www.douyin.com', desc:'短视频', icon:'video'},
-    {name:'油管', url:'https://www.youtube.com', desc:'视频', icon:'video'},
-    {name:'微博', url:'https://weibo.com', desc:'热点', icon:'at'},
-    {name:'小红书', url:'https://www.xiaohongshu.com', desc:'笔记', icon:'star'}
+    {name:'哔哩哔哩', url:'https://www.bilibili.com', desc:'视频', icon:'video', app:'bilibili://'},
+    {name:'抖音', url:'https://www.douyin.com', desc:'短视频', icon:'video', app:'snssdk1128://'},
+    {name:'油管', url:'https://www.youtube.com', desc:'视频', icon:'video', app:'youtube://'},
+    {name:'微博', url:'https://weibo.com', desc:'热点', icon:'at', app:'sinaweibo://'},
+    {name:'小红书', url:'https://www.xiaohongshu.com', desc:'笔记', icon:'star', app:'xhsdiscover://'}
   ]},
   { id:'g4', title:'生活', links:[
-    {name:'京东', url:'https://www.jd.com', desc:'购物', icon:'cart'},
-    {name:'淘宝', url:'https://www.taobao.com', desc:'购物', icon:'bag'},
-    {name:'拼多多', url:'https://www.pinduoduo.com', desc:'购物', icon:'bag'},
-    {name:'美团', url:'https://www.meituan.com', desc:'生活', icon:'shield'},
-    {name:'铁路12306', url:'https://www.12306.cn', desc:'出行', icon:'train'}
+    {name:'京东', url:'https://www.jd.com', desc:'购物', icon:'cart', app:'openapp.jdmobile://'},
+    {name:'淘宝', url:'https://www.taobao.com', desc:'购物', icon:'bag', app:'taobao://'},
+    {name:'拼多多', url:'https://www.pinduoduo.com', desc:'购物', icon:'bag', app:'pinduoduo://'},
+    {name:'美团', url:'https://www.meituan.com', desc:'生活', icon:'shield', app:'imeituan://'},
+    {name:'铁路12306', url:'https://www.12306.cn', desc:'出行', icon:'train', app:'cn.12306://'}
   ]},
   { id:'g5', title:'学术', links:[
     {name:'百度学术', url:'https://xueshu.baidu.com', desc:'论文', icon:'book'},
@@ -178,7 +178,7 @@ const grid = document.getElementById('grid');
 function groupViewHTML(g){
   return '<section class="group" data-gid="'+g.id+'"><h2><span class="dot"></span>'+esc(g.title)+'</h2><div class="links">'+
     g.links.map(l =>
-      '<a class="link" href="'+esc(l.url)+'" target="_blank" rel="noopener">'+
+      '<a class="link" href="'+esc(l.url)+'"'+(l.app?' data-app="'+esc(l.app)+'"':'')+' target="_blank" rel="noopener">'+
       '<span class="ic">'+svg(l.icon)+'</span>'+
       '<span class="nm">'+esc(l.name)+'</span>'+
       (l.desc ? '<span class="ds">'+esc(l.desc)+'</span>' : '')+
@@ -193,6 +193,7 @@ function linkEditRowHTML(gid, l, li){
   return '<div class="e-link" data-gid="'+gid+'" data-li="'+li+'">'+
     '<input class="e-nm" value="'+esc(l.name)+'" placeholder="名称">'+
     '<input class="e-url" value="'+esc(l.url)+'" placeholder="网址 https://…">'+
+    '<input class="e-app" value="'+esc(l.app||'')+'" placeholder="手机APP scheme(可选)">'+
     '<input class="e-desc" value="'+esc(l.desc||'')+'" placeholder="描述(可选)">'+
     '<div class="e-icon"><select>'+sel+'</select>'+
     '<span class="icon-pv">'+svg(l.icon)+'</span></div>'+
@@ -255,8 +256,9 @@ document.getElementById('saveBtn').addEventListener('click', function(){
       const nm = row.querySelector('.e-nm').value.trim();
       const url = row.querySelector('.e-url').value.trim();
       const desc = row.querySelector('.e-desc').value.trim();
+      const app = row.querySelector('.e-app').value.trim();
       const icon = row.querySelector('.e-icon select').value;
-      if (nm && url) group.links.push({ name: nm, url: url, desc: desc, icon: icon });
+      if (nm && url) group.links.push({ name: nm, url: url, desc: desc, icon: icon, app: app });
     });
     newData.push(group);
   });
@@ -295,8 +297,9 @@ grid.addEventListener('click', function(e){
       const nm = row.querySelector('.e-nm').value.trim();
       const url = row.querySelector('.e-url').value.trim();
       const desc = row.querySelector('.e-desc').value.trim();
+      const app = row.querySelector('.e-app').value.trim();
       const icon = row.querySelector('.e-icon select').value;
-      if (nm && url) group.links.push({ name: nm, url: url, desc: desc, icon: icon });
+      if (nm && url) group.links.push({ name: nm, url: url, desc: desc, icon: icon, app: app });
     });
     data[gi] = group;
     try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch(e){}
@@ -344,6 +347,27 @@ grid.addEventListener('click', function(e){
     grid.insertAdjacentHTML('beforeend', groupEditHTML(g));
     return;
   }
+});
+
+// ===== 手机端唤起 APP（PC 端正常打开网页）=====
+function isMobile(){
+  return /Android|webOS|iPhone|iPad|iPod|HarmonyOS|BlackBerry|Mobile/i.test(navigator.userAgent);
+}
+grid.addEventListener('click', function(e){
+  const a = e.target.closest('a.link');
+  if (!a) return;
+  const app = a.dataset.app;
+  if (!(isMobile() && app)) return; // PC 或无 scheme：按默认行为打开网页
+  e.preventDefault();
+  const webUrl = a.href;
+  let done = false;
+  const fallback = setTimeout(function(){
+    if (!done && !document.hidden){ done = true; window.location.href = webUrl; }
+  }, 1500);
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) clearTimeout(fallback);
+  });
+  window.location.href = app;
 });
 
 // 编辑表单联动图标预览

@@ -120,6 +120,7 @@ body{
 .editing .e-link input:focus{border-color:var(--accent)}
 .e-nm{flex:1 1 120px}
 .e-url{flex:2 1 220px}
+.e-app{flex:1 1 150px}
 .e-desc{flex:1 1 90px}
 .e-icon{flex:1 0 auto;display:flex;align-items:center;gap:6px}
 .e-icon select{font-size:14px;padding:8px;border:1px solid var(--line);border-radius:8px;color:var(--text);background:#fff;outline:none;cursor:pointer}
