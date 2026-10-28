@@ -79,6 +79,19 @@ body{
 .group h2{font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .group h2 .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
 .links{display:grid;gap:2px}
+/* 查看模式：超过约 5 行时出现滚动条 */
+.group .links{
+  max-height:210px;
+  overflow-y:auto;
+  scrollbar-width:thin;
+  scrollbar-color:var(--line) transparent;
+}
+.group .links::-webkit-scrollbar{width:6px}
+.group .links::-webkit-scrollbar-track{background:transparent}
+.group .links::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.group .links::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+/* 编辑模式：完全展开，不限制高度 */
+.editing .links{max-height:none;overflow-y:visible}
 .link{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:9px;text-decoration:none;color:var(--text);transition:background .15s}
 .link:hover{background:var(--accent-soft)}
 .link .ic{flex:none;width:22px;height:22px;color:var(--muted);display:flex;align-items:center;justify-content:center}

@@ -1,5 +1,6 @@
 const STORE_KEY = 'nav-page-data-v1';
 const WP_KEY = 'nav-page-wallpaper';
+const NAME_KEY = 'nav-page-name';
 
 const ICONS = {
   globe:   'M12 3v16M3 8h18M5 8a7 7 0 0 0 7 7 7 7 0 0 0 7-7',
@@ -411,9 +412,27 @@ function tick(){
 setInterval(tick, 1000); tick();
 
 const hour = new Date().getHours();
-document.getElementById('greet').textContent =
-  hour < 6 ? '夜深了，注意休息' : hour < 12 ? '早上好，欢迎回来' :
-  hour < 14 ? '中午好，欢迎回来' : hour < 18 ? '下午好，欢迎回来' : '晚上好，欢迎回来';
+function getName(){
+  try { const n = localStorage.getItem(NAME_KEY); return (n && n.trim()) ? n.trim() : ''; } catch(e){ return ''; }
+}
+function updateGreet(){
+  const base = hour < 6 ? '夜深了，注意休息' : hour < 12 ? '早上好，欢迎回来' :
+    hour < 14 ? '中午好，欢迎回来' : hour < 18 ? '下午好，欢迎回来' : '晚上好，欢迎回来';
+  const name = getName() || '沐熙菌';
+  document.getElementById('greet').textContent = name ? base + '，' + name : base;
+}
+updateGreet();
+// 名字设置：点击工具栏“名字”按钮自定义欢迎语中的名字
+document.getElementById('nameBtn').addEventListener('click', function(){
+  const cur = getName() || '沐熙菌';
+  const nm = prompt('设置欢迎语中的名字（留空则显示默认“沐熙菌”）：', cur);
+  if (nm === null) return;
+  try {
+    if (nm.trim()) localStorage.setItem(NAME_KEY, nm.trim());
+    else localStorage.removeItem(NAME_KEY);
+  } catch(e){}
+  updateGreet();
+});
 
 // ===== 搜索 =====
 const engines = {
