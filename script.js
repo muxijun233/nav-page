@@ -510,6 +510,48 @@ document.getElementById('nameBtn').addEventListener('click', function(){
   updateGreet();
 });
 
+// ===== 导出 / 导入配置（便于换电脑迁移）=====
+document.getElementById('exportBtn').addEventListener('click', function(){
+  const cfg = {
+    app: 'nav-page',
+    data: localStorage.getItem(STORE_KEY),
+    wallpaper: localStorage.getItem(WP_KEY),
+    customWp: localStorage.getItem(CUSTOM_WP_KEY),
+    name: localStorage.getItem(NAME_KEY)
+  };
+  const blob = new Blob([JSON.stringify(cfg, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nav-config.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  toast('配置已导出');
+});
+document.getElementById('importBtn').addEventListener('click', function(){
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', function(e){
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try {
+      const cfg = JSON.parse(reader.result);
+      if (cfg.data) localStorage.setItem(STORE_KEY, cfg.data);
+      if (cfg.wallpaper) localStorage.setItem(WP_KEY, cfg.wallpaper);
+      if (cfg.customWp) localStorage.setItem(CUSTOM_WP_KEY, cfg.customWp);
+      if (cfg.name) localStorage.setItem(NAME_KEY, cfg.name);
+      location.reload();
+    } catch(err){
+      toast('配置文件无效，导入失败');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
 // ===== 搜索 =====
 const engines = {
   bing:'https://www.bing.com/search?q=',
