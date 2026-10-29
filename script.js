@@ -223,7 +223,7 @@ function renderView(){
   grid.innerHTML = data.map(groupViewHTML).join('');
 }
 function renderEdit(){
-  grid.innerHTML = data.map(groupEditHTML).join('');
+  grid.innerHTML = data.map(groupEditHTML).join('') + '<button class="add-group" id="addGroupBtn" type="button">＋ 添加分组</button>';
 }
 // 只重绘单个分组（替换对应 section），不影响其他分组正在编辑的内容
 function renderGroup(gid, asEdit){
@@ -363,11 +363,11 @@ grid.addEventListener('click', function(e){
     return;
   }
 
-  // 添加分组：只在网格末尾追加新分组
+  // 添加分组：新分组插到按钮之前，按钮始终保持在网格底部
   if (t.id === 'addGroupBtn'){
     const g = { id: uid('g'), title:'新分组', links:[{ name:'新链接', url:'https://', desc:'', icon:'globe' }] };
     data.push(g);
-    grid.insertAdjacentHTML('beforeend', groupEditHTML(g));
+    t.insertAdjacentHTML('beforebegin', groupEditHTML(g));
     return;
   }
 });
